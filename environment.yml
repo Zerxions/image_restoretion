@@ -1,0 +1,25 @@
+name: image_restore
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+dependencies:
+  - python=3.10
+  - pip>=23
+  - pytorch>=2.2,<2.6
+  - torchvision>=0.17,<0.21
+  - pytorch-cuda=12.1
+  - pip:
+      - numpy>=1.24,<2.0
+      - opencv-python>=4.8
+      - Pillow>=10.0
+      - gradio>=4.44,<6
+      - PyYAML>=6.0
+      - scipy>=1.10
+      - tqdm>=4.65
+      - requests>=2.31
+      - lpips>=0.1.4
+      - basicsr==1.4.2
+      - facexlib==0.3.0
+      - gfpgan==1.3.8
+      - realesrgan==0.3.0

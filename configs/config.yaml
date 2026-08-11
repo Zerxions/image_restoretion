@@ -1,0 +1,29 @@
+runtime:
+  device: auto
+  max_input_pixels: 24000000
+
+realesrgan:
+  weights: weights/RealESRGAN_x4plus.pth
+  tile: 512
+  tile_pad: 10
+  pre_pad: 0
+  half: true
+
+face_detector:
+  model: retinaface_resnet50
+  # Leave empty to let facexlib use/download its standard weight cache.
+  # For fully offline use, set a relative file path such as weights/detection_Resnet50_Final.pth.
+  weights: null
+  confidence_threshold: 0.8
+
+face_restoration:
+  backend: codeformer
+  codeformer_repo: models/codeformer
+  codeformer_weights: weights/codeformer.pth
+  gfpgan_weights: weights/GFPGANv1.4.pth
+
+server:
+  host: 127.0.0.1
+  port: 7860
+  share: false
+  concurrency_limit: 1
