@@ -22,7 +22,7 @@ LOGGER = logging.getLogger("app")
 PIPELINE = ImageRestorationPipeline("configs/config.yaml")
 
 
-def run_restoration(image, mode: str, scale_label: str, face_strength: float, progress=gr.Progress()):
+def run_restoration(image, mode: str, scale_label: str, face_strength: float, hair_strength: float, progress=gr.Progress()):
     if image is None:
         raise gr.Error("Please upload a JPG, JPEG or PNG image first.")
     try:
@@ -32,6 +32,7 @@ def run_restoration(image, mode: str, scale_label: str, face_strength: float, pr
             mode=mode.split(" ", 1)[0],
             scale=scale,
             face_strength=face_strength,
+            hair_strength=hair_strength,
             progress=lambda value, text: progress(value, desc=text),
         )
         return bgr_to_rgb(result.image_bgr), result.message, f"**Model status:** {PIPELINE.status()}"
@@ -67,12 +68,13 @@ with gr.Blocks(title="AI Image Restoration", theme=gr.themes.Soft()) as demo:
         )
         scale = gr.Radio(["2x", "4x"], value="2x", label="Scale")
         strength = gr.Slider(0.0, 1.0, value=0.7, step=0.05, label="Face Restore Strength")
+        hair_strength = gr.Slider(0.0, 1.0, value=0.35, step=0.05, label="Hair Enhance Strength")
 
     start = gr.Button("Start Restoration", variant="primary")
     run_status = gr.Textbox(label="Run Status", interactive=False)
     start.click(
         run_restoration,
-        inputs=[original, mode, scale, strength],
+        inputs=[original, mode, scale, strength, hair_strength],
         outputs=[restored, run_status, model_status],
     )
 

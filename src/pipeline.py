@@ -68,6 +68,7 @@ class ImageRestorationPipeline:
         mode: str = "Auto",
         scale: int = 2,
         face_strength: float = 0.7,
+        hair_strength: float = 0.35,
         progress: Callable[[float, str], None] | None = None,
     ) -> RestorationResult:
         mode_key = self.MODES.get(mode, mode.lower())
@@ -93,7 +94,9 @@ class ImageRestorationPipeline:
             restored_count = 0
             if use_faces:
                 report(0.7, "Restoring and blending faces")
-                enhanced, restored_count = self.face_restoration.restore(enhanced, float(face_strength))
+                enhanced, restored_count = self.face_restoration.restore(
+                    enhanced, float(face_strength), float(hair_strength)
+                )
             report(1.0, "Restoration complete")
         message = (
             f"Complete · {image_bgr.shape[1]}×{image_bgr.shape[0]} → "

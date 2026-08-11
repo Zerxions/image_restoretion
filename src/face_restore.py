@@ -11,7 +11,7 @@ import torch
 from torchvision.transforms.functional import normalize
 
 from .compat import ensure_basicsr_torchvision_compat
-from .fusion import blend_face_crop
+from .fusion import blend_face_crop, blend_hair_crop, paste_faces_with_hair
 
 LOGGER = logging.getLogger(__name__)
 
@@ -116,10 +116,12 @@ class FaceRestorationEngine:
         return np.ascontiguousarray(output)
 
     @torch.inference_mode()
-    def restore(self, enhanced_bgr: np.ndarray, strength: float) -> tuple[np.ndarray, int]:
+    def restore(self, enhanced_bgr: np.ndarray, strength: float, hair_strength: float = 0.35) -> tuple[np.ndarray, int]:
         if not 0.0 <= strength <= 1.0:
             raise ValueError("Face restore strength must be between 0 and 1.")
-        if strength == 0.0:
+        if not 0.0 <= hair_strength <= 1.0:
+            raise ValueError("Hair enhance strength must be between 0 and 1.")
+        if strength == 0.0 and hair_strength == 0.0:
             return enhanced_bgr, 0
         self.load()
         from facexlib.utils.face_restoration_helper import FaceRestoreHelper
@@ -143,15 +145,23 @@ class FaceRestorationEngine:
         if count == 0:
             return enhanced_bgr, 0
         helper.align_warp_face()
+        parsing_maps: list[np.ndarray] = []
         for crop in helper.cropped_faces:
             try:
                 restored = self._restore_crop(crop, strength)
+                parse_input = cv2.resize(crop, (512, 512), interpolation=cv2.INTER_LINEAR)
+                parse_tensor = torch.from_numpy(parse_input[:, :, ::-1].copy()).permute(2, 0, 1).float().div(255)
+                normalize(parse_tensor, (0.5, 0.5, 0.5), (0.5, 0.5, 0.5), inplace=True)
+                labels = helper.face_parse(parse_tensor.unsqueeze(0).to(self.device))[0].argmax(dim=1).squeeze().cpu().numpy()
+                base = blend_face_crop(crop, restored, strength)
+                combined, _ = blend_hair_crop(base, crop, restored, labels, hair_strength)
                 # facexlib 0.3.0 accepts only the restored aligned face here;
                 # the source crop is already incorporated by blend_face_crop.
-                helper.add_restored_face(blend_face_crop(crop, restored, strength))
+                helper.add_restored_face(combined)
+                parsing_maps.append(labels)
             except torch.cuda.OutOfMemoryError as exc:
                 torch.cuda.empty_cache()
                 raise RuntimeError("Insufficient GPU memory during face restoration.") from exc
         helper.get_inverse_affine(None)
-        output = helper.paste_faces_to_input_image(upsample_img=enhanced_bgr)
+        output = paste_faces_with_hair(helper, enhanced_bgr, parsing_maps, hair_strength)
         return output, int(count)

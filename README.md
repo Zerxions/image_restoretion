@@ -14,6 +14,7 @@
 - Portrait：强制运行人像 pipeline，适合人物照片
 - Landscape：仅运行 Real-ESRGAN，避免对非人像纹理做无意义的人脸处理
 - 2x/4x 输出，以及 0～1 可调的人脸恢复强度
+- 基于 facexlib 语义解析的独立头发增强，并保留原始头发色度
 - CUDA 自动检测；CUDA 不可用时自动回退 CPU
 - 模型延迟加载且每个服务进程只加载一次
 - RetinaFace 五点定位、512×512 人脸对齐、解析掩膜和逆仿射回贴
@@ -144,12 +145,17 @@ python app.py
 | Restoration Mode | Auto / Portrait / Landscape | 自动、人像或风景 pipeline |
 | Scale | 2x / 4x | 最终长宽倍率；4x 使用更多显存和时间 |
 | Face Restore Strength | 0～1 | 0 保留超分后人脸，1 最大程度采用生成式修复结果 |
+| Hair Enhance Strength | 0～1 | 头发语义区域的细节融合强度；建议 0.25～0.5 |
 | `realesrgan.tile` | 0 或正整数 | 0 表示整图推理；显存不足可设 256、384、512 |
 | `runtime.max_input_pixels` | 正整数 | 输入像素安全上限，避免意外超大图片耗尽内存 |
 
 CodeFormer 内部的 fidelity 权重与 UI 强度方向相反：系统会自动映射为
 `fidelity = 1 - strength`，并额外将修复结果与原始对齐人脸做软融合，因此 UI 的语义始终是
 “值越大，修复越强”。
+
+头发增强使用 face parsing 的 hair 类别生成软掩膜，仅融合 CodeFormer 重建的亮度细节，
+并保留输入头发的色度以降低染发、偏色和发型漂移风险。严重失焦时新增发丝仍属于模型推断，
+强度过高可能产生不真实纹理。
 
 ## 项目结构
 

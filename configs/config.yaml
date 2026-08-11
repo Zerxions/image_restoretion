@@ -18,6 +18,7 @@ face_detector:
 
 face_restoration:
   backend: codeformer
+  hair_enhance_strength: 0.35
   codeformer_repo: models/codeformer
   codeformer_weights: weights/codeformer.pth
   gfpgan_weights: weights/GFPGANv1.4.pth
