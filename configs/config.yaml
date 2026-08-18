@@ -1,6 +1,36 @@
 runtime:
   device: auto
   max_input_pixels: 24000000
+  # Protect host RAM as output pixels grow by scale squared (4x = 16x pixels).
+  max_output_pixels: 100000000
+
+deblur:
+  # Smart AI defaults to EVSSM RealBlur-J for ordinary JPEG/PNG motion blur.
+  default_ai_backend: evssm
+  fallback_to_traditional: true
+  skip_ai_when_sharp: true
+
+  evssm:
+    architecture: models/third_party/evssm/EVSSM.py
+    weights: weights/evssm_realblur_j.pth
+    tile: 256
+    tile_overlap: 64
+    # EVSSM selective-scan/FFT contains intentional FP32 operations.
+    half: false
+
+  restormer:
+    architecture: models/third_party/restormer/restormer_arch.py
+    weights: weights/restormer_defocus.pth
+    tile: 384
+    tile_overlap: 32
+    half: true
+
+  # Traditional, weight-free fallback. Larger tiles use more host RAM.
+  tile_size: 1024
+  # Auto mode applies full strength below the first score, gradually attenuates
+  # between the two scores, and leaves already-sharp images unchanged.
+  auto_blur_threshold: 35.0
+  auto_sharp_threshold: 180.0
 
 realesrgan:
   weights: weights/RealESRGAN_x4plus.pth
@@ -9,16 +39,30 @@ realesrgan:
   pre_pad: 0
   half: true
 
+advanced_super_resolution:
+  # DRCT MSE is the faithful default; Auto falls back to Real-ESRGAN.
+  default_backend: drct
+  fallback_to_realesrgan: true
+  drct:
+    architecture: models/third_party/drct/DRCT_arch.py
+    weights: weights/drct_mse_x4.pth
+    tile: 256
+    tile_pad: 32
+    half: true
+
 face_detector:
   model: retinaface_resnet50
-  # Leave empty to let facexlib use/download its standard weight cache.
-  # For fully offline use, set a relative file path such as weights/detection_Resnet50_Final.pth.
+  # Leave empty to let facexlib manage its standard weights. See README for offline setup.
   weights: null
   confidence_threshold: 0.8
 
 face_restoration:
-  backend: codeformer
-  hair_enhance_strength: 0.35
+  # RestoreFormer++ is Apache-2.0 and fits an RTX 4060 in FP16. CodeFormer and
+  # GFPGAN remain automatic fallbacks when its assets are unavailable.
+  backend: restoreformer
+  restoreformer_architecture: models/third_party/restoreformerplusplus/vqvae_arch.py
+  restoreformer_weights: weights/RestoreFormer++.ckpt
+  restoreformer_half: true
   codeformer_repo: models/codeformer
   codeformer_weights: weights/codeformer.pth
   gfpgan_weights: weights/GFPGANv1.4.pth

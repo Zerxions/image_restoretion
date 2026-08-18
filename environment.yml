@@ -18,6 +18,7 @@ dependencies:
       - scipy>=1.10
       - tqdm>=4.65
       - requests>=2.31
+      - einops>=0.8,<0.9
       - lpips>=0.1.4
       - basicsr==1.4.2
       - facexlib==0.3.0

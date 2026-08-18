@@ -9,6 +9,9 @@ PyYAML>=6.0
 scipy>=1.10
 tqdm>=4.65
 requests>=2.31
+einops>=0.8,<0.9
+# EVSSM's ABI-specific mamba-ssm wheel and compatible Transformers version are
+# installed explicitly by scripts/prepare_ai_models.py --install-deps.
 lpips>=0.1.4
 basicsr==1.4.2
 facexlib==0.3.0
